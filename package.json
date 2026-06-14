@@ -1,0 +1,11 @@
+{
+  "name": "tubetopost",
+  "version": "1.0.0",
+  "description": "YouTube to LinkedIn AI Post Creator — Chrome Extension (MV3)",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "icons": "node make-icons.js",
+    "test": "node test.mjs"
+  }
+}

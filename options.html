@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TubeToPost — Réglages</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M3 7.5A2.5 2.5 0 0 1 5.5 5h9A2.5 2.5 0 0 1 17 7.5v9A2.5 2.5 0 0 1 14.5 19h-9A2.5 2.5 0 0 1 3 16.5v-9Z" fill="currentColor" opacity="0.9"/>
+            <path d="M9 9.5v5l4-2.5-4-2.5Z" fill="#fff"/>
+            <path d="M19 8l2-1v10l-2-1V8Z" fill="currentColor" opacity="0.5"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">TubeToPost</div>
+          <div class="brand-sub">Tableau de bord</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#ai" class="nav-item active">Moteur IA</a>
+        <a href="#style" class="nav-item">Style des posts</a>
+        <a href="#plan" class="nav-item">Abonnement</a>
+      </nav>
+      <div class="sidebar-foot">v1.0.0 · sans frais cachés</div>
+    </aside>
+
+    <!-- Content -->
+    <main class="content">
+      <div id="savedToast" class="toast hidden">Réglages enregistrés ✓</div>
+
+      <!-- Section IA -->
+      <section id="ai" class="card">
+        <header class="card-head">
+          <h2>Moteur IA</h2>
+          <p>Choisissez où s'exécute l'IA. Le mode local est 100% gratuit (Ollama / LM Studio).</p>
+        </header>
+
+        <div class="field">
+          <label for="aiProvider">Fournisseur</label>
+          <select id="aiProvider" class="input">
+            <option value="local">Ollama — local, gratuit (localhost:11434)</option>
+            <option value="lmstudio">LM Studio — local, gratuit (127.0.0.1:1234)</option>
+            <option value="openai">OpenAI — commercial (clé API)</option>
+            <option value="anthropic">Anthropic / Claude — commercial (clé API)</option>
+          </select>
+          <p class="field-hint" id="providerHint"></p>
+        </div>
+
+        <!-- Bloc local: Ollama -->
+        <div class="provider-block" data-provider="local">
+          <div class="grid-2">
+            <div class="field">
+              <label for="localUrl">URL Ollama</label>
+              <input id="localUrl" class="input" type="text" placeholder="http://localhost:11434" />
+            </div>
+            <div class="field">
+              <label for="localModel">Modèle</label>
+              <input id="localModel" class="input" type="text" placeholder="llama3.1:8b" />
+            </div>
+          </div>
+          <p class="field-hint">Astuce RTX 5060 Ti : <code>ollama pull llama3.1:8b</code> puis <code>ollama serve</code>.</p>
+        </div>
+
+        <!-- Bloc local: LM Studio -->
+        <div class="provider-block hidden" data-provider="lmstudio">
+          <div class="grid-2">
+            <div class="field">
+              <label for="lmstudioUrl">URL LM Studio</label>
+              <input id="lmstudioUrl" class="input" type="text" placeholder="http://127.0.0.1:1234" />
+            </div>
+            <div class="field">
+              <label for="lmstudioModel">Modèle</label>
+              <input id="lmstudioModel" class="input" type="text" placeholder="local-model" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Bloc OpenAI -->
+        <div class="provider-block hidden" data-provider="openai">
+          <div class="field">
+            <label for="openaiKey">Clé API OpenAI</label>
+            <input id="openaiKey" class="input" type="password" placeholder="sk-..." autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="openaiModel">Modèle</label>
+            <input id="openaiModel" class="input" type="text" placeholder="gpt-4o-mini" />
+          </div>
+        </div>
+
+        <!-- Bloc Anthropic -->
+        <div class="provider-block hidden" data-provider="anthropic">
+          <div class="field">
+            <label for="anthropicKey">Clé API Anthropic</label>
+            <input id="anthropicKey" class="input" type="password" placeholder="sk-ant-..." autocomplete="off" />
+          </div>
+          <div class="field">
+            <label for="anthropicModel">Modèle</label>
+            <input id="anthropicModel" class="input" type="text" placeholder="claude-haiku-4-5-20251001" />
+          </div>
+        </div>
+      </section>
+
+      <!-- Section Style -->
+      <section id="style" class="card">
+        <header class="card-head">
+          <h2>Style des posts</h2>
+          <p>Réglez la langue et le ton. Les posts restent 100% honnêtes — aucune donnée inventée.</p>
+        </header>
+        <div class="grid-2">
+          <div class="field">
+            <label for="language">Langue</label>
+            <select id="language" class="input">
+              <option value="fr">Français</option>
+              <option value="en">Anglais</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="tone">Ton</label>
+            <select id="tone" class="input">
+              <option value="professional">Professionnel</option>
+              <option value="inspirational">Inspirant</option>
+              <option value="educational">Pédagogique</option>
+            </select>
+          </div>
+        </div>
+        <label class="switch-row">
+          <input id="hashtags" type="checkbox" />
+          <span class="switch"></span>
+          <span class="switch-label">Ajouter des hashtags pertinents</span>
+        </label>
+      </section>
+
+      <!-- Section Abonnement -->
+      <section id="plan" class="card">
+        <header class="card-head">
+          <h2>Abonnement</h2>
+          <p>Le mode local est gratuit et illimité. Les moteurs commerciaux nécessitent TubeToPost Pro.</p>
+        </header>
+
+        <div class="field">
+          <label for="userEmail">Email de l'abonnement</label>
+          <input id="userEmail" class="input" type="email" placeholder="votre@email.com" autocomplete="email" />
+          <p class="field-hint">Utilisez le <strong>même email</strong> que lors du paiement Stripe. Sert à vérifier votre statut Pro.</p>
+        </div>
+
+        <div class="plan-box">
+          <div class="plan-info">
+            <span class="plan-name" id="planName">Plan gratuit</span>
+            <span class="plan-price">15€<small>/mois</small></span>
+            <ul class="plan-features">
+              <li>Posts illimités via OpenAI / Claude</li>
+              <li>Tarif transparent, sans frais cachés</li>
+              <li>Désabonnement en un clic, à tout moment</li>
+            </ul>
+          </div>
+          <div class="plan-actions">
+            <button id="upgradeBtn" class="btn btn-primary">Passer à Pro</button>
+            <button id="manageBtn" class="btn btn-ghost hidden">Gérer / Se désabonner</button>
+            <button id="refreshSubBtn" class="btn btn-ghost">Vérifier le statut</button>
+          </div>
+        </div>
+        <p class="field-hint">Essais gratuits restants (moteurs commerciaux) : <strong id="usageInfo">3 / 3</strong>. Le mode local est illimité.</p>
+      </section>
+
+      <div class="save-bar">
+        <button id="saveBtn" class="btn btn-primary">Enregistrer les réglages</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
