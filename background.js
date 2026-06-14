@@ -56,11 +56,74 @@ const CATEGORY_LABELS = {
 // ---------------------------------------------------------------------------
 // Extraction des métadonnées YouTube (injectée dans l'onglet actif)
 // ---------------------------------------------------------------------------
-function scrapeYouTube() {
+async function scrapeYouTube(lang) {
   const pick = (sel, attr) => {
     const el = document.querySelector(sel);
     if (!el) return '';
     return (attr ? el.getAttribute(attr) : el.textContent || '').trim();
+  };
+
+  // Extrait un objet JSON équilibré qui suit un marqueur dans un texte.
+  const extractJSONObject = (text, marker) => {
+    const i = text.indexOf(marker);
+    if (i === -1) return null;
+    const start = text.indexOf('{', i);
+    if (start === -1) return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let j = start; j < text.length; j++) {
+      const ch = text[j];
+      if (inStr) {
+        if (esc) esc = false;
+        else if (ch === '\\') esc = true;
+        else if (ch === '"') inStr = false;
+      } else if (ch === '"') inStr = true;
+      else if (ch === '{') depth++;
+      else if (ch === '}') { depth--; if (depth === 0) return text.slice(start, j + 1); }
+    }
+    return null;
+  };
+
+  // Récupère ytInitialPlayerResponse depuis les <script> de la page.
+  const getPlayerResponse = () => {
+    if (window.ytInitialPlayerResponse) return window.ytInitialPlayerResponse; // parfois exposé
+    for (const s of document.scripts) {
+      const txt = s.textContent || '';
+      if (txt.includes('ytInitialPlayerResponse')) {
+        const raw = extractJSONObject(txt, 'ytInitialPlayerResponse');
+        if (raw) { try { return JSON.parse(raw); } catch { /* ignore */ } }
+      }
+    }
+    return null;
+  };
+
+  // Télécharge et nettoie la transcription (sous-titres) si disponible.
+  const fetchTranscript = async () => {
+    try {
+      const player = getPlayerResponse();
+      const tracks = player?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+      if (!tracks || !tracks.length) return '';
+      const want = (lang || 'fr').slice(0, 2);
+      const track =
+        tracks.find((t) => t.languageCode?.startsWith(want) && t.kind !== 'asr') ||
+        tracks.find((t) => t.languageCode?.startsWith(want)) ||
+        tracks.find((t) => t.kind !== 'asr') ||
+        tracks[0];
+      if (!track?.baseUrl) return '';
+      const url = track.baseUrl + (track.baseUrl.includes('fmt=') ? '' : '&fmt=json3');
+      const resp = await fetch(url);
+      if (!resp.ok) return '';
+      const data = await resp.json();
+      const text = (data.events || [])
+        .flatMap((e) => e.segs || [])
+        .map((s) => s.utf8 || '')
+        .join('')
+        .replace(/\n+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      return text;
+    } catch {
+      return '';
+    }
   };
 
   const title =
@@ -100,24 +163,29 @@ function scrapeYouTube() {
     }
   }
 
+  const transcript = location.pathname === '/watch' ? await fetchTranscript() : '';
+
   return {
     url: location.href,
     isWatchPage: location.pathname === '/watch',
     title,
     channel,
     description: (description || '').slice(0, 4000),
-    durationSeconds: durationSeconds || null
+    durationSeconds: durationSeconds || null,
+    transcript: (transcript || '').slice(0, 12000),
+    hasTranscript: !!transcript
   };
 }
 
-async function extractActiveVideo() {
+async function extractActiveVideo(lang) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab || !tab.id) throw new Error('NO_TAB');
   if (!/^https:\/\/www\.youtube\.com\//.test(tab.url || '')) throw new Error('NOT_YOUTUBE');
 
   const [res] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
-    func: scrapeYouTube
+    func: scrapeYouTube,
+    args: [lang || 'fr']
   });
   const meta = res?.result;
   if (!meta || !meta.isWatchPage) throw new Error('NOT_WATCH_PAGE');
@@ -232,12 +300,16 @@ function buildMessages(meta, settings, mode) {
     '- Ne mentionne pas que le texte est généré par IA.'
   ].join('\n');
 
+  const transcript = (meta.transcript || '').slice(0, 8000);
   const user = [
     'Crée un post LinkedIn à partir de cette vidéo YouTube.',
     `Titre: ${meta.title}`,
     meta.channel ? `Chaîne: ${meta.channel}` : '',
     `Durée de la vidéo: ${formatDuration(meta.durationSeconds)} -> mode "${mode.name}" (${mode.words} mots).`,
     meta.description ? `Description:\n${meta.description}` : '',
+    transcript
+      ? `Transcription de la vidéo (source principale — REFORMULE, ne recopie jamais):\n"""${transcript}"""`
+      : '(Transcription indisponible — base-toi sur le titre et la description, sans inventer de détails.)',
     `Lien: ${meta.url}`
   ].filter(Boolean).join('\n');
 
@@ -335,7 +407,7 @@ async function generatePost() {
 
   let meta;
   try {
-    meta = await extractActiveVideo();
+    meta = await extractActiveVideo(settings.language);
   } catch (e) {
     const map = {
       NOT_YOUTUBE: "Ouvre une vidéo YouTube pour générer un post.",
@@ -397,7 +469,8 @@ async function generatePost() {
       durationSeconds: meta.durationSeconds,
       durationLabel: formatDuration(meta.durationSeconds),
       mode: mode.name,
-      modeWords: mode.words
+      modeWords: mode.words,
+      hasTranscript: !!meta.hasTranscript
     },
     credits: { unlimited: isLocal || isPro, remaining }
   };

@@ -83,8 +83,10 @@ async function generate() {
     lastMeta = resp.meta;
     $('postOutput').value = resp.post;
     const m = resp.meta || {};
-    // Affiche la durée détectée + le mode d'adaptation choisi.
-    const badge = m.durationLabel ? `⏱ ${m.durationLabel} · ${m.mode} (${m.modeWords} mots) — ` : '';
+    // Affiche la durée détectée + le mode + si la transcription a servi de source.
+    const dur = m.durationLabel ? `⏱ ${m.durationLabel} · ${m.mode} (${m.modeWords} mots)` : '';
+    const tr = m.hasTranscript ? ' · 📝 transcription' : '';
+    const badge = dur ? `${dur}${tr} — ` : '';
     $('resultTitle').textContent = badge + (m.title || 'Post généré');
     // Met à jour le compteur d'essais après une génération réussie.
     if (resp.credits && resp.credits.remaining !== null && resp.credits.remaining !== undefined) {

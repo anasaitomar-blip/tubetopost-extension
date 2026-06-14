@@ -149,6 +149,57 @@ ok(cleanPost('Super post.\n\n#IA #LinkedIn').includes('#IA #LinkedIn'), 'hashtag
 // Entrée vide gérée.
 ok(cleanPost('') === '' && cleanPost(null) === '', 'entrée vide non gérée');
 
+console.log('— Transcription : extraction JSON + parsing json3 —');
+// Réplique de extractJSONObject() de scrapeYouTube.
+function extractJSONObject(text, marker) {
+  const i = text.indexOf(marker);
+  if (i === -1) return null;
+  const start = text.indexOf('{', i);
+  if (start === -1) return null;
+  let depth = 0, inStr = false, esc = false;
+  for (let j = start; j < text.length; j++) {
+    const ch = text[j];
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') { depth--; if (depth === 0) return text.slice(start, j + 1); }
+  }
+  return null;
+}
+// Objet équilibré extrait même avec accolades/quotes imbriquées et bruit après.
+{
+  const src = 'var ytInitialPlayerResponse = {"a":{"b":"}{"},"c":[1,2]};</script>JUNK{bad';
+  const raw = extractJSONObject(src, 'ytInitialPlayerResponse');
+  ok(raw !== null, 'extraction null');
+  const obj = JSON.parse(raw);
+  ok(obj.a.b === '}{' && obj.c.length === 2, 'JSON imbriqué mal extrait');
+}
+ok(extractJSONObject('rien ici', 'marqueur') === null, 'marqueur absent -> null');
+
+// Parsing json3 -> texte transcription (réplique).
+function parseJson3(data) {
+  return (data.events || [])
+    .flatMap((e) => e.segs || [])
+    .map((s) => s.utf8 || '')
+    .join('')
+    .replace(/\n+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+{
+  const data = { events: [
+    { segs: [{ utf8: 'Bonjour' }, { utf8: ' à' }] },
+    { segs: [{ utf8: ' tous\n' }] },
+    { /* event sans segs */ },
+    { segs: [{ utf8: 'voici   la   suite' }] }
+  ] };
+  ok(parseJson3(data) === 'Bonjour à tous voici la suite', 'parsing json3 incorrect');
+}
+ok(parseJson3({}) === '', 'json3 vide -> chaîne vide');
+
 console.log('— manifest.json —');
 const mf = JSON.parse(fs.readFileSync('./manifest.json', 'utf8'));
 ok(mf.manifest_version === 3, 'manifest_version != 3');
