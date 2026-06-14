@@ -1,0 +1,10 @@
+# Fichiers exclus du paquet Chrome Web Store (git archive).
+# Le runtime de l'extension n'en a pas besoin.
+test.mjs          export-ignore
+make-icons.js     export-ignore
+package.json      export-ignore
+README.md         export-ignore
+PRIVACY.md        export-ignore
+STORE_LISTING.md  export-ignore
+.gitignore        export-ignore
+.gitattributes    export-ignore
