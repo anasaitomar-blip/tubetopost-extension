@@ -2,3 +2,4 @@ node_modules/
 *.log
 # Le backend a son propre repo (tubetopost-backend) :
 backend/
+*.zip
